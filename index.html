@@ -165,6 +165,27 @@
   </div>
 
   <div class="panel">
+    <h2>Số dòng SO còn tồn đọng theo Khách hàng (Top 15)</h2>
+    <p class="desc">Xếp hạng khách hàng theo số dòng SO chưa chuyển sang SCAF — khách hàng ở trên cùng cần ưu tiên xử lý trước. Các khách hàng còn lại được gộp vào "Khác".</p>
+    <div style="height:440px;"><canvas id="custBacklogChart"></canvas></div>
+    <div class="legend-key">
+      <span><span class="dot" style="background:var(--seq-650)"></span>Tồn đọng nhiều</span>
+      <span><span class="dot" style="background:var(--seq-200)"></span>Tồn đọng ít / đã xong</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>% Upload SAP theo Khách hàng lớn nhất (Top 15 theo khối lượng)</h2>
+    <p class="desc">Trong số 15 khách hàng có nhiều dòng SO nhất, tỷ lệ đã upload lên SAP của từng khách hàng. Màu thể hiện mức độ rủi ro: Đỏ &lt; 10%, Vàng 10–40%, Xanh ≥ 40%.</p>
+    <div style="height:440px;"><canvas id="custSapChart"></canvas></div>
+    <div class="legend-key">
+      <span><span class="dot" style="background:var(--status-critical)"></span>Rủi ro cao (&lt;10%)</span>
+      <span><span class="dot" style="background:var(--status-warning)"></span>Cần theo dõi (10–40%)</span>
+      <span><span class="dot" style="background:var(--status-good)"></span>Ổn định (≥40%)</span>
+    </div>
+  </div>
+
+  <div class="panel">
     <h2>Bảng chi tiết đầy đủ theo RCM</h2>
     <p class="desc">Bấm vào tiêu đề cột để sắp xếp. Dữ liệu tổng hợp từ 3 sheet: SO Monitor Migration, SO Khong Migration, SCAF SO Detail.</p>
     <div class="search-box"><input type="text" id="tableSearch" placeholder="Tìm theo tên RCM..."></div>
@@ -198,7 +219,7 @@
 </div>
 
 <script>
-const DATA = {"report_date": "26/07/2026 13:49", "totals": {"monitor_lines": 9676, "migrated_scaf": 8053, "not_migrated_scaf": 1623, "uploaded_sap": 398, "so_count": 1918, "km_lines": 5136, "km_approved": 56, "scaf_total": 24471, "scaf_is_pri": 16624, "scaf_is_bom": 17323, "scaf_in_sap": 4271, "scaf_complete": 5}, "pct": {"scaf": 83.2, "sap": 4.1, "pri": 67.9, "bom": 70.8, "insap": 17.5}, "rcm": [{"rcm": "TRẦN NGỌC THÁI HÀ", "monitor_lines": 1688, "migrated_scaf": 632, "not_migrated_scaf": 1056, "uploaded_sap": 1, "order_qty": 1398863, "so_count": 899, "customer_count": 3, "km_lines": 398, "km_approved": 0, "scaf_total": 2378, "scaf_is_pri": 1465, "scaf_is_bom": 1237, "scaf_in_sap": 462, "scaf_complete": 0, "pct_scaf": 37.4, "pct_sap": 0.1, "pct_pri": 61.6, "pct_bom": 52.0, "pct_insap": 19.4}, {"rcm": "TRẦN THỊ THANH HÀ", "monitor_lines": 2680, "migrated_scaf": 2140, "not_migrated_scaf": 540, "uploaded_sap": 0, "order_qty": 2571875, "so_count": 259, "customer_count": 5, "km_lines": 1086, "km_approved": 30, "scaf_total": 12304, "scaf_is_pri": 6094, "scaf_is_bom": 10106, "scaf_in_sap": 1, "scaf_complete": 0, "pct_scaf": 79.9, "pct_sap": 0.0, "pct_pri": 49.5, "pct_bom": 82.1, "pct_insap": 0.0}, {"rcm": "LÊ THỊ THẢO NGUYÊN", "monitor_lines": 853, "migrated_scaf": 836, "not_migrated_scaf": 17, "uploaded_sap": 0, "order_qty": 1214738, "so_count": 131, "customer_count": 9, "km_lines": 191, "km_approved": 4, "scaf_total": 1560, "scaf_is_pri": 1487, "scaf_is_bom": 991, "scaf_in_sap": 890, "scaf_complete": 0, "pct_scaf": 98.0, "pct_sap": 0.0, "pct_pri": 95.3, "pct_bom": 63.5, "pct_insap": 57.1}, {"rcm": "TRẦN THỊ THANH THẢO", "monitor_lines": 511, "migrated_scaf": 501, "not_migrated_scaf": 10, "uploaded_sap": 88, "order_qty": 996776, "so_count": 237, "customer_count": 4, "km_lines": 190, "km_approved": 0, "scaf_total": 544, "scaf_is_pri": 529, "scaf_is_bom": 488, "scaf_in_sap": 357, "scaf_complete": 0, "pct_scaf": 98.0, "pct_sap": 17.2, "pct_pri": 97.2, "pct_bom": 89.7, "pct_insap": 65.6}, {"rcm": "LÊ CẨM GIAI KỲ", "monitor_lines": 502, "migrated_scaf": 502, "not_migrated_scaf": 0, "uploaded_sap": 0, "order_qty": 389078, "so_count": 67, "customer_count": 3, "km_lines": 538, "km_approved": 10, "scaf_total": 734, "scaf_is_pri": 484, "scaf_is_bom": 140, "scaf_in_sap": 35, "scaf_complete": 5, "pct_scaf": 100.0, "pct_sap": 0.0, "pct_pri": 65.9, "pct_bom": 19.1, "pct_insap": 4.8}, {"rcm": "LÊ THÚY HẰNG", "monitor_lines": 1, "migrated_scaf": 1, "not_migrated_scaf": 0, "uploaded_sap": 0, "order_qty": 3179, "so_count": 1, "customer_count": 1, "km_lines": 3, "km_approved": 0, "scaf_total": 0, "scaf_is_pri": 0, "scaf_is_bom": 0, "scaf_in_sap": 0, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 0.0, "pct_pri": 0, "pct_bom": 0, "pct_insap": 0}, {"rcm": "MAI THÙY DUNG", "monitor_lines": 259, "migrated_scaf": 259, "not_migrated_scaf": 0, "uploaded_sap": 0, "order_qty": 472516, "so_count": 18, "customer_count": 4, "km_lines": 246, "km_approved": 0, "scaf_total": 293, "scaf_is_pri": 255, "scaf_is_bom": 209, "scaf_in_sap": 97, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 0.0, "pct_pri": 87.0, "pct_bom": 71.3, "pct_insap": 33.1}, {"rcm": "NGUYỄN LÊ TRƯỜNG AN", "monitor_lines": 201, "migrated_scaf": 201, "not_migrated_scaf": 0, "uploaded_sap": 0, "order_qty": 314992, "so_count": 26, "customer_count": 1, "km_lines": 25, "km_approved": 0, "scaf_total": 258, "scaf_is_pri": 258, "scaf_is_bom": 153, "scaf_in_sap": 63, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 0.0, "pct_pri": 100.0, "pct_bom": 59.3, "pct_insap": 24.4}, {"rcm": "NGUYỄN THỊ THU HƯƠNG", "monitor_lines": 13, "migrated_scaf": 13, "not_migrated_scaf": 0, "uploaded_sap": 0, "order_qty": 0, "so_count": 2, "customer_count": 2, "km_lines": 18, "km_approved": 10, "scaf_total": 0, "scaf_is_pri": 0, "scaf_is_bom": 0, "scaf_in_sap": 0, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 0.0, "pct_pri": 0, "pct_bom": 0, "pct_insap": 0}, {"rcm": "PHẠM THỊ THU TRANG", "monitor_lines": 359, "migrated_scaf": 359, "not_migrated_scaf": 0, "uploaded_sap": 12, "order_qty": 1406641, "so_count": 116, "customer_count": 9, "km_lines": 321, "km_approved": 2, "scaf_total": 770, "scaf_is_pri": 758, "scaf_is_bom": 750, "scaf_in_sap": 419, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 3.3, "pct_pri": 98.4, "pct_bom": 97.4, "pct_insap": 54.4}, {"rcm": "QUÁCH BẢO NGHĨA", "monitor_lines": 1122, "migrated_scaf": 1122, "not_migrated_scaf": 0, "uploaded_sap": 263, "order_qty": 1081471, "so_count": 33, "customer_count": 6, "km_lines": 1478, "km_approved": 0, "scaf_total": 2585, "scaf_is_pri": 2574, "scaf_is_bom": 2026, "scaf_in_sap": 717, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 23.4, "pct_pri": 99.6, "pct_bom": 78.4, "pct_insap": 27.7}, {"rcm": "THIỆU MỸ LINH", "monitor_lines": 204, "migrated_scaf": 204, "not_migrated_scaf": 0, "uploaded_sap": 0, "order_qty": 279609, "so_count": 15, "customer_count": 3, "km_lines": 38, "km_approved": 0, "scaf_total": 623, "scaf_is_pri": 395, "scaf_is_bom": 609, "scaf_in_sap": 0, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 0.0, "pct_pri": 63.4, "pct_bom": 97.8, "pct_insap": 0.0}, {"rcm": "TRẦN ANH QUỐC", "monitor_lines": 54, "migrated_scaf": 54, "not_migrated_scaf": 0, "uploaded_sap": 32, "order_qty": 111957, "so_count": 11, "customer_count": 1, "km_lines": 0, "km_approved": 0, "scaf_total": 0, "scaf_is_pri": 0, "scaf_is_bom": 0, "scaf_in_sap": 0, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 59.3, "pct_pri": 0, "pct_bom": 0, "pct_insap": 0}, {"rcm": "TRẦN HỮU CÁT TƯỜNG", "monitor_lines": 756, "migrated_scaf": 756, "not_migrated_scaf": 0, "uploaded_sap": 2, "order_qty": 373580, "so_count": 13, "customer_count": 5, "km_lines": 308, "km_approved": 0, "scaf_total": 1882, "scaf_is_pri": 1785, "scaf_is_bom": 97, "scaf_in_sap": 885, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 0.3, "pct_pri": 94.8, "pct_bom": 5.2, "pct_insap": 47.0}, {"rcm": "TRẦN THỊ KIỀU MY", "monitor_lines": 473, "migrated_scaf": 473, "not_migrated_scaf": 0, "uploaded_sap": 0, "order_qty": 1074107, "so_count": 90, "customer_count": 1, "km_lines": 296, "km_approved": 0, "scaf_total": 540, "scaf_is_pri": 540, "scaf_is_bom": 517, "scaf_in_sap": 345, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 0.0, "pct_pri": 100.0, "pct_bom": 95.7, "pct_insap": 63.9}]};
+const DATA = {"report_date": "26/07/2026 13:49", "totals": {"monitor_lines": 9676, "migrated_scaf": 8053, "not_migrated_scaf": 1623, "uploaded_sap": 398, "so_count": 1918, "km_lines": 5136, "km_approved": 56, "scaf_total": 24471, "scaf_is_pri": 16624, "scaf_is_bom": 17323, "scaf_in_sap": 4271, "scaf_complete": 5}, "pct": {"scaf": 83.2, "sap": 4.1, "pri": 67.9, "bom": 70.8, "insap": 17.5}, "rcm": [{"rcm": "TRẦN NGỌC THÁI HÀ", "monitor_lines": 1688, "migrated_scaf": 632, "not_migrated_scaf": 1056, "uploaded_sap": 1, "order_qty": 1398863, "so_count": 899, "customer_count": 3, "km_lines": 398, "km_approved": 0, "scaf_total": 2378, "scaf_is_pri": 1465, "scaf_is_bom": 1237, "scaf_in_sap": 462, "scaf_complete": 0, "pct_scaf": 37.4, "pct_sap": 0.1, "pct_pri": 61.6, "pct_bom": 52.0, "pct_insap": 19.4}, {"rcm": "TRẦN THỊ THANH HÀ", "monitor_lines": 2680, "migrated_scaf": 2140, "not_migrated_scaf": 540, "uploaded_sap": 0, "order_qty": 2571875, "so_count": 259, "customer_count": 5, "km_lines": 1086, "km_approved": 30, "scaf_total": 12304, "scaf_is_pri": 6094, "scaf_is_bom": 10106, "scaf_in_sap": 1, "scaf_complete": 0, "pct_scaf": 79.9, "pct_sap": 0.0, "pct_pri": 49.5, "pct_bom": 82.1, "pct_insap": 0.0}, {"rcm": "LÊ THỊ THẢO NGUYÊN", "monitor_lines": 853, "migrated_scaf": 836, "not_migrated_scaf": 17, "uploaded_sap": 0, "order_qty": 1214738, "so_count": 131, "customer_count": 9, "km_lines": 191, "km_approved": 4, "scaf_total": 1560, "scaf_is_pri": 1487, "scaf_is_bom": 991, "scaf_in_sap": 890, "scaf_complete": 0, "pct_scaf": 98.0, "pct_sap": 0.0, "pct_pri": 95.3, "pct_bom": 63.5, "pct_insap": 57.1}, {"rcm": "TRẦN THỊ THANH THẢO", "monitor_lines": 511, "migrated_scaf": 501, "not_migrated_scaf": 10, "uploaded_sap": 88, "order_qty": 996776, "so_count": 237, "customer_count": 4, "km_lines": 190, "km_approved": 0, "scaf_total": 544, "scaf_is_pri": 529, "scaf_is_bom": 488, "scaf_in_sap": 357, "scaf_complete": 0, "pct_scaf": 98.0, "pct_sap": 17.2, "pct_pri": 97.2, "pct_bom": 89.7, "pct_insap": 65.6}, {"rcm": "LÊ CẨM GIAI KỲ", "monitor_lines": 502, "migrated_scaf": 502, "not_migrated_scaf": 0, "uploaded_sap": 0, "order_qty": 389078, "so_count": 67, "customer_count": 3, "km_lines": 538, "km_approved": 10, "scaf_total": 734, "scaf_is_pri": 484, "scaf_is_bom": 140, "scaf_in_sap": 35, "scaf_complete": 5, "pct_scaf": 100.0, "pct_sap": 0.0, "pct_pri": 65.9, "pct_bom": 19.1, "pct_insap": 4.8}, {"rcm": "LÊ THÚY HẰNG", "monitor_lines": 1, "migrated_scaf": 1, "not_migrated_scaf": 0, "uploaded_sap": 0, "order_qty": 3179, "so_count": 1, "customer_count": 1, "km_lines": 3, "km_approved": 0, "scaf_total": 0, "scaf_is_pri": 0, "scaf_is_bom": 0, "scaf_in_sap": 0, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 0.0, "pct_pri": 0, "pct_bom": 0, "pct_insap": 0}, {"rcm": "MAI THÙY DUNG", "monitor_lines": 259, "migrated_scaf": 259, "not_migrated_scaf": 0, "uploaded_sap": 0, "order_qty": 472516, "so_count": 18, "customer_count": 4, "km_lines": 246, "km_approved": 0, "scaf_total": 293, "scaf_is_pri": 255, "scaf_is_bom": 209, "scaf_in_sap": 97, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 0.0, "pct_pri": 87.0, "pct_bom": 71.3, "pct_insap": 33.1}, {"rcm": "NGUYỄN LÊ TRƯỜNG AN", "monitor_lines": 201, "migrated_scaf": 201, "not_migrated_scaf": 0, "uploaded_sap": 0, "order_qty": 314992, "so_count": 26, "customer_count": 1, "km_lines": 25, "km_approved": 0, "scaf_total": 258, "scaf_is_pri": 258, "scaf_is_bom": 153, "scaf_in_sap": 63, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 0.0, "pct_pri": 100.0, "pct_bom": 59.3, "pct_insap": 24.4}, {"rcm": "NGUYỄN THỊ THU HƯƠNG", "monitor_lines": 13, "migrated_scaf": 13, "not_migrated_scaf": 0, "uploaded_sap": 0, "order_qty": 0, "so_count": 2, "customer_count": 2, "km_lines": 18, "km_approved": 10, "scaf_total": 0, "scaf_is_pri": 0, "scaf_is_bom": 0, "scaf_in_sap": 0, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 0.0, "pct_pri": 0, "pct_bom": 0, "pct_insap": 0}, {"rcm": "PHẠM THỊ THU TRANG", "monitor_lines": 359, "migrated_scaf": 359, "not_migrated_scaf": 0, "uploaded_sap": 12, "order_qty": 1406641, "so_count": 116, "customer_count": 9, "km_lines": 321, "km_approved": 2, "scaf_total": 770, "scaf_is_pri": 758, "scaf_is_bom": 750, "scaf_in_sap": 419, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 3.3, "pct_pri": 98.4, "pct_bom": 97.4, "pct_insap": 54.4}, {"rcm": "QUÁCH BẢO NGHĨA", "monitor_lines": 1122, "migrated_scaf": 1122, "not_migrated_scaf": 0, "uploaded_sap": 263, "order_qty": 1081471, "so_count": 33, "customer_count": 6, "km_lines": 1478, "km_approved": 0, "scaf_total": 2585, "scaf_is_pri": 2574, "scaf_is_bom": 2026, "scaf_in_sap": 717, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 23.4, "pct_pri": 99.6, "pct_bom": 78.4, "pct_insap": 27.7}, {"rcm": "THIỆU MỸ LINH", "monitor_lines": 204, "migrated_scaf": 204, "not_migrated_scaf": 0, "uploaded_sap": 0, "order_qty": 279609, "so_count": 15, "customer_count": 3, "km_lines": 38, "km_approved": 0, "scaf_total": 623, "scaf_is_pri": 395, "scaf_is_bom": 609, "scaf_in_sap": 0, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 0.0, "pct_pri": 63.4, "pct_bom": 97.8, "pct_insap": 0.0}, {"rcm": "TRẦN ANH QUỐC", "monitor_lines": 54, "migrated_scaf": 54, "not_migrated_scaf": 0, "uploaded_sap": 32, "order_qty": 111957, "so_count": 11, "customer_count": 1, "km_lines": 0, "km_approved": 0, "scaf_total": 0, "scaf_is_pri": 0, "scaf_is_bom": 0, "scaf_in_sap": 0, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 59.3, "pct_pri": 0, "pct_bom": 0, "pct_insap": 0}, {"rcm": "TRẦN HỮU CÁT TƯỜNG", "monitor_lines": 756, "migrated_scaf": 756, "not_migrated_scaf": 0, "uploaded_sap": 2, "order_qty": 373580, "so_count": 13, "customer_count": 5, "km_lines": 308, "km_approved": 0, "scaf_total": 1882, "scaf_is_pri": 1785, "scaf_is_bom": 97, "scaf_in_sap": 885, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 0.3, "pct_pri": 94.8, "pct_bom": 5.2, "pct_insap": 47.0}, {"rcm": "TRẦN THỊ KIỀU MY", "monitor_lines": 473, "migrated_scaf": 473, "not_migrated_scaf": 0, "uploaded_sap": 0, "order_qty": 1074107, "so_count": 90, "customer_count": 1, "km_lines": 296, "km_approved": 0, "scaf_total": 540, "scaf_is_pri": 540, "scaf_is_bom": 517, "scaf_in_sap": 345, "scaf_complete": 0, "pct_scaf": 100.0, "pct_sap": 0.0, "pct_pri": 100.0, "pct_bom": 95.7, "pct_insap": 63.9}], "customer": [{"customer": "DESIPRO PTE., LTD", "monitor_lines": 1917, "migrated_scaf": 1546, "not_migrated_scaf": 371, "uploaded_sap": 0, "so_count": 188, "pct_scaf": 80.6, "pct_sap": 0.0}, {"customer": "MAST INDUSTRIES (FAR EAST) LIMITED", "monitor_lines": 1530, "migrated_scaf": 474, "not_migrated_scaf": 1056, "uploaded_sap": 0, "so_count": 854, "pct_scaf": 31.0, "pct_sap": 0.0}, {"customer": "Chưa xác định", "monitor_lines": 804, "migrated_scaf": 635, "not_migrated_scaf": 169, "uploaded_sap": 1, "so_count": 167, "pct_scaf": 79.0, "pct_sap": 0.1}, {"customer": "DBI", "monitor_lines": 473, "migrated_scaf": 473, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 90, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "KMART NZ HOLDINGS LIMITED", "monitor_lines": 429, "migrated_scaf": 429, "not_migrated_scaf": 0, "uploaded_sap": 198, "so_count": 7, "pct_scaf": 100.0, "pct_sap": 46.2}, {"customer": "LACOSTE OPERATIONS", "monitor_lines": 382, "migrated_scaf": 382, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 41, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "KMART AUSTRALIA LIMITED", "monitor_lines": 356, "migrated_scaf": 356, "not_migrated_scaf": 0, "uploaded_sap": 63, "so_count": 11, "pct_scaf": 100.0, "pct_sap": 17.7}, {"customer": "CSP PARIS FASHION GROUP", "monitor_lines": 263, "migrated_scaf": 253, "not_migrated_scaf": 10, "uploaded_sap": 46, "so_count": 52, "pct_scaf": 96.2, "pct_sap": 17.5}, {"customer": "ARENA ITALIA SPA", "monitor_lines": 248, "migrated_scaf": 248, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 3, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "PERRY ELLIS INTERNATIONAL", "monitor_lines": 248, "migrated_scaf": 248, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 38, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "ARENA S.P.A", "monitor_lines": 197, "migrated_scaf": 197, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 5, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "CÔNG TY TNHH CORÈLE V.", "monitor_lines": 196, "migrated_scaf": 196, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 21, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "HUNKEMOLLER INTERNATIONAL B.V.", "monitor_lines": 174, "migrated_scaf": 174, "not_migrated_scaf": 0, "uploaded_sap": 30, "so_count": 159, "pct_scaf": 100.0, "pct_sap": 17.2}, {"customer": "LIFUNG", "monitor_lines": 172, "migrated_scaf": 172, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 11, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "INTAISP", "monitor_lines": 170, "migrated_scaf": 170, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 10, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "ARENA", "monitor_lines": 159, "migrated_scaf": 159, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 3, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "THE HADDAD APPAREL GROUP, LTD.", "monitor_lines": 154, "migrated_scaf": 154, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 12, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "BOODY AUSTRALIA PTY LTD", "monitor_lines": 150, "migrated_scaf": 150, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 1, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "KOMAR SOURCING LIMITED", "monitor_lines": 137, "migrated_scaf": 137, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 10, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "HBI", "monitor_lines": 121, "migrated_scaf": 104, "not_migrated_scaf": 17, "uploaded_sap": 0, "so_count": 30, "pct_scaf": 86.0, "pct_sap": 0.0}, {"customer": "ARENA FRANCE", "monitor_lines": 120, "migrated_scaf": 120, "not_migrated_scaf": 0, "uploaded_sap": 2, "so_count": 4, "pct_scaf": 100.0, "pct_sap": 1.7}, {"customer": "SCROLL CORPORATION", "monitor_lines": 119, "migrated_scaf": 119, "not_migrated_scaf": 0, "uploaded_sap": 6, "so_count": 39, "pct_scaf": 100.0, "pct_sap": 5.0}, {"customer": "100106-HUGO BOSS TICINO SA", "monitor_lines": 118, "migrated_scaf": 118, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 25, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "CHARLES KOMAR & SONS INC", "monitor_lines": 113, "migrated_scaf": 113, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 3, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "ADOREME, INC", "monitor_lines": 98, "migrated_scaf": 98, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 5, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "HADDAD", "monitor_lines": 88, "migrated_scaf": 88, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 38, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "CENTRIC BRANDS HOLDING LLC", "monitor_lines": 85, "migrated_scaf": 85, "not_migrated_scaf": 0, "uploaded_sap": 2, "so_count": 2, "pct_scaf": 100.0, "pct_sap": 2.4}, {"customer": "SPORTMASTER LTD", "monitor_lines": 83, "migrated_scaf": 83, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 2, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "DELTA GALIL BRANDS INTERNATIONAL GM", "monitor_lines": 71, "migrated_scaf": 71, "not_migrated_scaf": 0, "uploaded_sap": 1, "so_count": 43, "pct_scaf": 100.0, "pct_sap": 1.4}, {"customer": "DELTA GALIL BRANDS INTER. GMBH", "monitor_lines": 68, "migrated_scaf": 68, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 8, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "HUNKE MOLLER", "monitor_lines": 66, "migrated_scaf": 66, "not_migrated_scaf": 0, "uploaded_sap": 12, "so_count": 24, "pct_scaf": 100.0, "pct_sap": 18.2}, {"customer": "HANESAUTRA", "monitor_lines": 55, "migrated_scaf": 55, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 4, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "WOLF", "monitor_lines": 54, "migrated_scaf": 54, "not_migrated_scaf": 0, "uploaded_sap": 32, "so_count": 11, "pct_scaf": 100.0, "pct_sap": 59.3}, {"customer": "CTY TNHH FASTECH ASIA", "monitor_lines": 34, "migrated_scaf": 34, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 4, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "INTAISP -> GAO", "monitor_lines": 33, "migrated_scaf": 33, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 4, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "Le Coq Sportif", "monitor_lines": 32, "migrated_scaf": 32, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 1, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "POND GROUP CO.,LTD.", "monitor_lines": 27, "migrated_scaf": 27, "not_migrated_scaf": 0, "uploaded_sap": 4, "so_count": 6, "pct_scaf": 100.0, "pct_sap": 14.8}, {"customer": "Webcam Generation DBA Adore Me", "monitor_lines": 25, "migrated_scaf": 25, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 5, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "DELTA01", "monitor_lines": 19, "migrated_scaf": 19, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 8, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "MITCHDOWD", "monitor_lines": 19, "migrated_scaf": 19, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 14, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "PD SPACE CO. LTD.", "monitor_lines": 11, "migrated_scaf": 11, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 5, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": 100194, "monitor_lines": 11, "migrated_scaf": 11, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 1, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "POND", "monitor_lines": 9, "migrated_scaf": 9, "not_migrated_scaf": 0, "uploaded_sap": 1, "so_count": 2, "pct_scaf": 100.0, "pct_sap": 11.1}, {"customer": "INTICOM SPA", "monitor_lines": 8, "migrated_scaf": 8, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 2, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "MANMADE PRODUCTS FOR MEN", "monitor_lines": 6, "migrated_scaf": 6, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 3, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "DULUTH TRADING CO BUYING GROUP", "monitor_lines": 6, "migrated_scaf": 6, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 1, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "MANMADE_11860224 CANADA INC.", "monitor_lines": 5, "migrated_scaf": 5, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 2, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "CTY TNHH DECATHLON VIET NAM", "monitor_lines": 4, "migrated_scaf": 4, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 3, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "CÔNG TY TNHH DECATHLON VIỆT NAM", "monitor_lines": 2, "migrated_scaf": 2, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 2, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "LF CENTENNIAL PTE. LTD", "monitor_lines": 2, "migrated_scaf": 2, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 1, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": 100055, "monitor_lines": 2, "migrated_scaf": 2, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 1, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "CANADELLE LIMITED PARTNERSHIP", "monitor_lines": 1, "migrated_scaf": 1, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 1, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "INTAISP->GA OPERATIONS SPA", "monitor_lines": 1, "migrated_scaf": 1, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 1, "pct_scaf": 100.0, "pct_sap": 0.0}, {"customer": "Shinsung Tongsang", "monitor_lines": 1, "migrated_scaf": 1, "not_migrated_scaf": 0, "uploaded_sap": 0, "so_count": 1, "pct_scaf": 100.0, "pct_sap": 0.0}]};
 
 // ---------- helpers ----------
 function fmt(n) { return new Intl.NumberFormat('vi-VN').format(n); }
@@ -428,6 +449,93 @@ function renderPriBom() {
   });
 }
 
+// ---------- customer charts ----------
+const TOP_N_CUST = 15;
+
+let custBacklogChartInst;
+function renderCustBacklog() {
+  const all = [...(DATA.customer || [])].sort((a,b) => b.not_migrated_scaf - a.not_migrated_scaf);
+  const top = all.slice(0, TOP_N_CUST);
+  const rest = all.slice(TOP_N_CUST);
+  const rows = [...top];
+  if (rest.length) {
+    rows.push({
+      customer: `Khác (${rest.length} khách hàng khác)`,
+      not_migrated_scaf: rest.reduce((s,r) => s + r.not_migrated_scaf, 0),
+    });
+  }
+  rows.sort((a,b) => b.not_migrated_scaf - a.not_migrated_scaf);
+  const max = Math.max(...rows.map(r => r.not_migrated_scaf), 1);
+  const ctx = document.getElementById('custBacklogChart');
+  if (custBacklogChartInst) custBacklogChartInst.destroy();
+  custBacklogChartInst = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.customer),
+      datasets: [{
+        data: rows.map(r => r.not_migrated_scaf),
+        backgroundColor: rows.map(r => seqColor(r.not_migrated_scaf / max)),
+        borderRadius: 4,
+        barThickness: 18,
+        showValueLabel: true,
+        valueFormatter: fmt,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => fmt(c.raw) + ' dòng chưa chuyển sang SCAF' } }
+      },
+      scales: {
+        x: { beginAtZero: true, grid: { color: getVar('--gridline') }, ticks: { color: getVar('--text-muted') } },
+        y: { grid: { display: false }, ticks: { color: getVar('--text-primary'), font: { size: 11 } } }
+      }
+    },
+    plugins: [valueLabelPlugin]
+  });
+}
+
+let custSapChartInst;
+function renderCustSap() {
+  const rows = [...(DATA.customer || [])]
+    .sort((a,b) => b.monitor_lines - a.monitor_lines)
+    .slice(0, TOP_N_CUST)
+    .sort((a,b) => a.pct_sap - b.pct_sap);
+  const ctx = document.getElementById('custSapChart');
+  if (custSapChartInst) custSapChartInst.destroy();
+  custSapChartInst = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.customer),
+      datasets: [{
+        data: rows.map(r => r.pct_sap),
+        backgroundColor: rows.map(r => pctColor(r.pct_sap)),
+        borderRadius: 4,
+        barThickness: 18,
+        showValueLabel: true,
+        valueFormatter: (v) => v + '%',
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => c.raw + '% đã upload SAP (' + fmt(rows[c.dataIndex].monitor_lines) + ' dòng)' } }
+      },
+      scales: {
+        x: { beginAtZero: true, max: 100, grid: { color: getVar('--gridline') }, ticks: { color: getVar('--text-muted') } },
+        y: { grid: { display: false }, ticks: { color: getVar('--text-primary'), font: { size: 11 } } }
+      }
+    },
+    plugins: [valueLabelPlugin]
+  });
+}
+
 // ---------- table ----------
 let sortKey = 'not_migrated_scaf', sortDir = -1;
 function pill(pct) {
@@ -473,6 +581,8 @@ function renderAll() {
   renderBacklog();
   renderSap();
   renderPriBom();
+  renderCustBacklog();
+  renderCustSap();
   renderTable();
 }
 renderAll();

@@ -35,6 +35,14 @@ def strip_diacritics(s):
 def norm_words(s):
     return set(re.findall(r'[a-z]+', strip_diacritics(s)))
 
+def norm_cust_key(c):
+    if c is None: return None
+    s = str(c).strip()
+    if not s: return None
+    s = re.sub(r'[.,]', '', s)
+    s = re.sub(r'\s+', ' ', s).upper().strip()
+    return s or None
+
 CANONICAL = [
     'TRẦN NGỌC THÁI HÀ', 'TRẦN HỮU CÁT TƯỜNG', 'LÊ THÚY HẰNG', 'NGUYỄN LÊ TRƯỜNG AN',
     'TRẦN THỊ THANH HÀ', 'PHẠM THỊ THU TRANG', 'LÊ THỊ THẢO NGUYÊN', 'TRẦN THỊ THANH THẢO',
@@ -82,6 +90,23 @@ def main():
         d['so_set'].add(r[1])
         if r[6]:
             d['customers'].add(r[6])
+
+    by_cust = collections.defaultdict(lambda: {
+        'total_lines': 0, 'migrated_scaf': 0, 'not_migrated_scaf': 0, 'uploaded_sap': 0,
+        'so_set': set(), 'variants': collections.Counter(),
+    })
+    for r in mon_rows:
+        key = norm_cust_key(r[6]) or 'CHƯA XÁC ĐỊNH'
+        d = by_cust[key]
+        d['variants'][clean(r[6]) or 'Chưa xác định'] += 1
+        d['total_lines'] += 1
+        if clean(r[33]) == 'x':
+            d['migrated_scaf'] += 1
+        else:
+            d['not_migrated_scaf'] += 1
+        if clean(r[34]) == 'x':
+            d['uploaded_sap'] += 1
+        d['so_set'].add(r[1])
 
     ws2 = wb['3. SO Khong Migration']
     km_rows = list(ws2.iter_rows(min_row=2, values_only=True))
@@ -156,7 +181,26 @@ def main():
         'bom': round(100 * totals['scaf_is_bom'] / totals['scaf_total'], 1),
         'insap': round(100 * totals['scaf_in_sap'] / totals['scaf_total'], 1),
     }
-    payload = {'report_date': report_date, 'totals': totals, 'pct': pct, 'rcm': rows}
+
+    cust_rows = []
+    for key, d in by_cust.items():
+        ml = d['total_lines']
+        label = d['variants'].most_common(1)[0][0] if key != 'CHƯA XÁC ĐỊNH' else 'Chưa xác định'
+        pct_scaf = round(100 * d['migrated_scaf'] / ml, 1) if ml else 0
+        pct_sap = round(100 * d['uploaded_sap'] / ml, 1) if ml else 0
+        cust_rows.append({
+            'customer': label,
+            'monitor_lines': ml,
+            'migrated_scaf': d['migrated_scaf'],
+            'not_migrated_scaf': d['not_migrated_scaf'],
+            'uploaded_sap': d['uploaded_sap'],
+            'so_count': len(d['so_set']),
+            'pct_scaf': pct_scaf,
+            'pct_sap': pct_sap,
+        })
+    cust_rows.sort(key=lambda r: -r['monitor_lines'])
+
+    payload = {'report_date': report_date, 'totals': totals, 'pct': pct, 'rcm': rows, 'customer': cust_rows}
 
     # Compare against what's currently committed (ignoring report_date) to decide if anything changed.
     data_path = f'{repo_root}/data/dashboard_data.json'
