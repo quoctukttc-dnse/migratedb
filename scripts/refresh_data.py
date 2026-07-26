@@ -118,6 +118,36 @@ def main():
             d['approved'] += 1
         d['so_set'].add(r[1])
 
+    # 'Reporting' sheet, block "1. Ưu Tiên 1 BY SO" (cols G..M, rows 4..~19).
+    # This block is driven by live COUNTIFS formulas against '2. SCAF SO Detail'
+    # (Priority == "1", is_PRI, is BOM, in SAP). We read the sheet's own cached
+    # formula results directly (data_only=True) rather than re-deriving them,
+    # since that's exactly what the business sees when they open the workbook.
+    pri1_rows = []
+    pri1_total = None
+    if 'Reporting' in wb.sheetnames:
+        wsr = wb['Reporting']
+        for r in wsr.iter_rows(min_row=4, max_row=40, min_col=7, max_col=13, values_only=True):
+            rcm_raw = clean(r[0])
+            if rcm_raw is None:
+                continue
+            if str(rcm_raw).strip() == 'Total':
+                pri1_total = {
+                    'so_ut1': r[2] or 0, 'pri': r[3] or 0, 'bom': r[4] or 0, 'sap': r[5] or 0,
+                }
+                break
+            so_ut1, pri, bom, sap = r[2] or 0, r[3] or 0, r[4] or 0, r[5] or 0
+            pri1_rows.append({'rcm': canon(rcm_raw), 'so_ut1': so_ut1, 'pri': pri, 'bom': bom, 'sap': sap})
+        # merge any duplicate canonical RCM rows (defensive, shouldn't normally happen)
+        merged = collections.OrderedDict()
+        for row in pri1_rows:
+            m = merged.setdefault(row['rcm'], {'rcm': row['rcm'], 'so_ut1': 0, 'pri': 0, 'bom': 0, 'sap': 0})
+            for k in ('so_ut1', 'pri', 'bom', 'sap'):
+                m[k] += row[k]
+        pri1_rows = list(merged.values())
+        if pri1_total is None:
+            pri1_total = {k: sum(row[k] for row in pri1_rows) for k in ('so_ut1', 'pri', 'bom', 'sap')}
+
     ws3 = wb['2. SCAF SO Detail']
     scaf_rows = list(ws3.iter_rows(min_row=2, values_only=True))
     by_rcm_scaf = collections.defaultdict(lambda: {
@@ -200,7 +230,33 @@ def main():
         })
     cust_rows.sort(key=lambda r: -r['monitor_lines'])
 
-    payload = {'report_date': report_date, 'totals': totals, 'pct': pct, 'rcm': rows, 'customer': cust_rows}
+    def pct_of(part, base):
+        return round(100 * part / base, 1) if base else 0
+
+    priority1 = None
+    if pri1_total is not None:
+        pri1_out_rows = []
+        for row in pri1_rows:
+            base = row['so_ut1']
+            pri1_out_rows.append({
+                **row,
+                'pct_pri': pct_of(row['pri'], base),
+                'pct_bom': pct_of(row['bom'], base),
+                'pct_sap': pct_of(row['sap'], base),
+            })
+        pri1_out_rows.sort(key=lambda r: -r['so_ut1'])
+        priority1 = {
+            'total': {
+                **pri1_total,
+                'pct_pri': pct_of(pri1_total['pri'], pri1_total['so_ut1']),
+                'pct_bom': pct_of(pri1_total['bom'], pri1_total['so_ut1']),
+                'pct_sap': pct_of(pri1_total['sap'], pri1_total['so_ut1']),
+            },
+            'rcm': pri1_out_rows,
+        }
+
+    payload = {'report_date': report_date, 'totals': totals, 'pct': pct, 'rcm': rows, 'customer': cust_rows,
+               'priority1': priority1}
 
     # Compare against what's currently committed (ignoring report_date) to decide if anything changed.
     data_path = f'{repo_root}/data/dashboard_data.json'

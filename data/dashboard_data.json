@@ -1,5 +1,5 @@
 {
-  "report_date": "26/07/2026 13:49",
+  "report_date": "26/07/2026 14:24",
   "totals": {
     "monitor_lines": 9676,
     "migrated_scaf": 8053,
@@ -894,5 +894,168 @@
       "pct_scaf": 100.0,
       "pct_sap": 0.0
     }
-  ]
+  ],
+  "priority1": {
+    "total": {
+      "so_ut1": 18649,
+      "pri": 11744,
+      "bom": 13714,
+      "sap": 2059,
+      "pct_pri": 63.0,
+      "pct_bom": 73.5,
+      "pct_sap": 11.0
+    },
+    "rcm": [
+      {
+        "rcm": "TRẦN THỊ THANH HÀ",
+        "so_ut1": 12291,
+        "pri": 6090,
+        "bom": 10094,
+        "sap": 1,
+        "pct_pri": 49.5,
+        "pct_bom": 82.1,
+        "pct_sap": 0.0
+      },
+      {
+        "rcm": "TRẦN HỮU CÁT TƯỜNG",
+        "so_ut1": 1625,
+        "pri": 1559,
+        "bom": 0,
+        "sap": 883,
+        "pct_pri": 95.9,
+        "pct_bom": 0.0,
+        "pct_sap": 54.3
+      },
+      {
+        "rcm": "TRẦN NGỌC THÁI HÀ",
+        "so_ut1": 816,
+        "pri": 712,
+        "bom": 649,
+        "sap": 154,
+        "pct_pri": 87.3,
+        "pct_bom": 79.5,
+        "pct_sap": 18.9
+      },
+      {
+        "rcm": "QUÁCH BẢO NGHĨA",
+        "so_ut1": 704,
+        "pri": 704,
+        "bom": 704,
+        "sap": 99,
+        "pct_pri": 100.0,
+        "pct_bom": 100.0,
+        "pct_sap": 14.1
+      },
+      {
+        "rcm": "PHẠM THỊ THU TRANG",
+        "so_ut1": 695,
+        "pri": 695,
+        "bom": 695,
+        "sap": 374,
+        "pct_pri": 100.0,
+        "pct_bom": 100.0,
+        "pct_sap": 53.8
+      },
+      {
+        "rcm": "LÊ CẨM GIAI KỲ",
+        "so_ut1": 656,
+        "pri": 410,
+        "bom": 75,
+        "sap": 4,
+        "pct_pri": 62.5,
+        "pct_bom": 11.4,
+        "pct_sap": 0.6
+      },
+      {
+        "rcm": "THIỆU MỸ LINH",
+        "so_ut1": 623,
+        "pri": 395,
+        "bom": 609,
+        "sap": 0,
+        "pct_pri": 63.4,
+        "pct_bom": 97.8,
+        "pct_sap": 0.0
+      },
+      {
+        "rcm": "LÊ THỊ THẢO NGUYÊN",
+        "so_ut1": 531,
+        "pri": 471,
+        "bom": 282,
+        "sap": 155,
+        "pct_pri": 88.7,
+        "pct_bom": 53.1,
+        "pct_sap": 29.2
+      },
+      {
+        "rcm": "TRẦN THỊ KIỀU MY",
+        "so_ut1": 394,
+        "pri": 394,
+        "bom": 371,
+        "sap": 242,
+        "pct_pri": 100.0,
+        "pct_bom": 94.2,
+        "pct_sap": 61.4
+      },
+      {
+        "rcm": "NGUYỄN LÊ TRƯỜNG AN",
+        "so_ut1": 205,
+        "pri": 205,
+        "bom": 142,
+        "sap": 58,
+        "pct_pri": 100.0,
+        "pct_bom": 69.3,
+        "pct_sap": 28.3
+      },
+      {
+        "rcm": "TRẦN THỊ THANH THẢO",
+        "so_ut1": 178,
+        "pri": 174,
+        "bom": 164,
+        "sap": 130,
+        "pct_pri": 97.8,
+        "pct_bom": 92.1,
+        "pct_sap": 73.0
+      },
+      {
+        "rcm": "MAI THÙY DUNG",
+        "so_ut1": 109,
+        "pri": 109,
+        "bom": 93,
+        "sap": 89,
+        "pct_pri": 100.0,
+        "pct_bom": 85.3,
+        "pct_sap": 81.7
+      },
+      {
+        "rcm": "NGUYỄN THỊ THU HƯƠNG",
+        "so_ut1": 0,
+        "pri": 0,
+        "bom": 0,
+        "sap": 0,
+        "pct_pri": 0,
+        "pct_bom": 0,
+        "pct_sap": 0
+      },
+      {
+        "rcm": "LÊ THÚY HẰNG",
+        "so_ut1": 0,
+        "pri": 0,
+        "bom": 0,
+        "sap": 0,
+        "pct_pri": 0,
+        "pct_bom": 0,
+        "pct_sap": 0
+      },
+      {
+        "rcm": "TRẦN ANH QUỐC",
+        "so_ut1": 0,
+        "pri": 0,
+        "bom": 0,
+        "sap": 0,
+        "pct_pri": 0,
+        "pct_bom": 0,
+        "pct_sap": 0
+      }
+    ]
+  }
 }
