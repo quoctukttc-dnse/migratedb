@@ -78,8 +78,8 @@
   header.top p.sub { margin: 0; color: var(--text-secondary); font-size: 13px; }
   .theme-toggle { border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
 
-  .kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 24px; }
-  @media (max-width: 1100px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } }
+  .kpi-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-bottom: 24px; }
+  @media (max-width: 1300px) { .kpi-row { grid-template-columns: repeat(4, 1fr); } }
   @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
   .stat-tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
   .stat-tile .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
@@ -158,6 +158,13 @@
   </div>
 
   <div class="panel">
+    <h2>% có PRI &amp; % có BOM theo RCM (SCAF SO Detail)</h2>
+    <p class="desc">Tỷ lệ dòng trong SCAF SO Detail đã có thông tin PRI (giá) và BOM (định mức) trên tổng số dòng SCAF Detail của từng RCM — hai điều kiện cần trước khi lên SAP. Sắp xếp theo mức độ sẵn sàng thấp → cao.</p>
+    <div style="height:440px;"><canvas id="priBomChart"></canvas></div>
+    <p id="priBomNote" class="legend-key" style="margin-top:10px;"></p>
+  </div>
+
+  <div class="panel">
     <h2>Bảng chi tiết đầy đủ theo RCM</h2>
     <p class="desc">Bấm vào tiêu đề cột để sắp xếp. Dữ liệu tổng hợp từ 3 sheet: SO Monitor Migration, SO Khong Migration, SCAF SO Detail.</p>
     <div class="search-box"><input type="text" id="tableSearch" placeholder="Tìm theo tên RCM..."></div>
@@ -229,7 +236,8 @@ function renderKPI() {
     { label: 'Đã chuyển sang SCAF', value: p.scaf + '%', delta: fmt(t.migrated_scaf) + ' dòng', cls: p.scaf >= 80 ? 'good' : '' },
     { label: 'Đã Upload SAP', value: p.sap + '%', delta: fmt(t.uploaded_sap) + ' dòng', cls: 'crit' },
     { label: 'Tổng số SO (distinct)', value: fmt(t.so_count), cls: '' },
-    { label: 'SCAF Detail có PRI / BOM', value: p.pri + '% / ' + p.bom + '%', cls: '' },
+    { label: 'SCAF Detail có PRI', value: p.pri + '%', delta: fmt(t.scaf_is_pri) + ' / ' + fmt(t.scaf_total) + ' dòng', cls: p.pri >= 80 ? 'good' : (p.pri < 40 ? 'crit' : '') },
+    { label: 'SCAF Detail có BOM', value: p.bom + '%', delta: fmt(t.scaf_is_bom) + ' / ' + fmt(t.scaf_total) + ' dòng', cls: p.bom >= 80 ? 'good' : (p.bom < 40 ? 'crit' : '') },
     { label: 'SO loại trừ (Không Migration)', value: fmt(t.km_lines), delta: fmt(t.km_approved) + ' đã approve', cls: '' },
   ];
   const row = document.getElementById('kpiRow');
@@ -366,11 +374,69 @@ function renderSap() {
   });
 }
 
+let priBomChartInst;
+function renderPriBom() {
+  const excluded = DATA.rcm.filter(r => r.scaf_total === 0);
+  const rows = DATA.rcm.filter(r => r.scaf_total > 0).sort((a,b) => (a.pct_pri + a.pct_bom) - (b.pct_pri + b.pct_bom));
+  const noteEl = document.getElementById('priBomNote');
+  if (noteEl) {
+    noteEl.textContent = excluded.length
+      ? `Không hiển thị: ${excluded.map(r => r.rcm).join(', ')} — chưa có dòng nào trong SCAF SO Detail nên chưa tính được % PRI/BOM.`
+      : '';
+  }
+  const ctx = document.getElementById('priBomChart');
+  if (priBomChartInst) priBomChartInst.destroy();
+  priBomChartInst = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.rcm),
+      datasets: [
+        {
+          label: '% có PRI',
+          data: rows.map(r => r.pct_pri),
+          backgroundColor: getVar('--series-1'),
+          borderRadius: 4,
+          barThickness: 12,
+        },
+        {
+          label: '% có BOM',
+          data: rows.map(r => r.pct_bom),
+          backgroundColor: getVar('--series-2'),
+          borderRadius: 4,
+          barThickness: 12,
+        },
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          align: 'start',
+          labels: { color: getVar('--text-secondary'), boxWidth: 12, boxHeight: 12, font: { size: 12 } }
+        },
+        tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.raw}%` } }
+      },
+      scales: {
+        x: { beginAtZero: true, max: 100, grid: { color: getVar('--gridline') }, ticks: { color: getVar('--text-muted') } },
+        y: { grid: { display: false }, ticks: { color: getVar('--text-primary'), font: { size: 11.5 } } }
+      }
+    }
+  });
+}
+
 // ---------- table ----------
 let sortKey = 'not_migrated_scaf', sortDir = -1;
 function pill(pct) {
   const cls = pct < 10 ? 'crit' : (pct < 40 ? 'warn' : 'good');
   return `<span class="pill ${cls}">${pct}%</span>`;
+}
+function pillOrNA(pct, hasBase) {
+  if (!hasBase) return `<span class="pill" style="color:var(--text-muted); background:transparent;">—</span>`;
+  return pill(pct);
 }
 function renderTable() {
   const q = (document.getElementById('tableSearch').value || '').toLowerCase();
@@ -387,8 +453,8 @@ function renderTable() {
       <td>${pill(r.pct_sap)}</td>
       <td>${fmt(r.so_count)}</td>
       <td>${fmt(r.scaf_total)}</td>
-      <td>${r.pct_pri}%</td>
-      <td>${r.pct_bom}%</td>
+      <td>${pillOrNA(r.pct_pri, r.scaf_total > 0)}</td>
+      <td>${pillOrNA(r.pct_bom, r.scaf_total > 0)}</td>
       <td>${fmt(r.km_lines)}</td>
     </tr>`).join('');
 }
@@ -406,6 +472,7 @@ function renderAll() {
   renderFunnel();
   renderBacklog();
   renderSap();
+  renderPriBom();
   renderTable();
 }
 renderAll();
