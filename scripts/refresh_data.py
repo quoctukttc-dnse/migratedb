@@ -65,10 +65,32 @@ def canon(v):
     _cache[v] = result
     return result
 
+def norm_so(v):
+    if v is None:
+        return None
+    return str(v).strip() or None
+
+
 def main():
     import openpyxl
     xlsx_path, mtime_ms, repo_root = sys.argv[1], int(sys.argv[2]), sys.argv[3]
     wb = openpyxl.load_workbook(xlsx_path, read_only=True, data_only=True)
+
+    # Load '2. SCAF SO Detail' early so we can cross-check the "Upload to SAP"
+    # flag from '1. SO Monitor Migration' against it (see note below).
+    ws3 = wb['2. SCAF SO Detail']
+    scaf_rows = list(ws3.iter_rows(min_row=2, values_only=True))
+    # SO_No_ScaX (col index 2 in SCAF SO Detail) is the ORIGINAL SCAX SO number —
+    # the same value as 'SCAX SO' (col index 1) in '1. SO Monitor Migration'.
+    # (col index 1 in SCAF SO Detail, "SO_No", is a *different*, SCAF-side
+    # numbering — joining on it instead silently produces near-zero overlap.)
+    # For each SCAX SO, note whether ANY of its SCAF Detail lines is flagged
+    # in_SAP == 1.
+    scax_has_sap = collections.defaultdict(bool)
+    for r in scaf_rows:
+        so_scax = norm_so(r[2])
+        if so_scax and r[19] == 1:
+            scax_has_sap[so_scax] = True
 
     ws = wb['1. SO Monitor Migration']
     mon_rows = list(ws.iter_rows(min_row=2, values_only=True))
@@ -85,7 +107,13 @@ def main():
             d['migrated_scaf'] += 1
         else:
             d['not_migrated_scaf'] += 1
-        if clean(r[34]) == 'x':
+        # "Upload to SAP" in Monitor is a manually-ticked 'x' column and is
+        # heavily stale/under-marked (verified: only 398/9676 rows marked,
+        # vs 3504/9676 once cross-checked against SCAF SO Detail's live
+        # in_SAP flag for the same SCAX SO — a >8x undercount). We treat a
+        # row as uploaded if EITHER the manual 'x' is present OR any SCAF
+        # Detail line for that same SO is flagged in_SAP == 1.
+        if clean(r[34]) == 'x' or scax_has_sap.get(norm_so(r[1]), False):
             d['uploaded_sap'] += 1
         d['so_set'].add(r[1])
         if r[6]:
@@ -104,7 +132,7 @@ def main():
             d['migrated_scaf'] += 1
         else:
             d['not_migrated_scaf'] += 1
-        if clean(r[34]) == 'x':
+        if clean(r[34]) == 'x' or scax_has_sap.get(norm_so(r[1]), False):
             d['uploaded_sap'] += 1
         d['so_set'].add(r[1])
 
@@ -154,8 +182,7 @@ def main():
     else:
         pri1_total = None
 
-    ws3 = wb['2. SCAF SO Detail']
-    scaf_rows = list(ws3.iter_rows(min_row=2, values_only=True))
+    # (scaf_rows already loaded near the top of main(), used there to build scax_has_sap)
     by_rcm_scaf = collections.defaultdict(lambda: {
         'total': 0, 'is_pri': 0, 'is_bom': 0, 'in_sap': 0, 'complete': 0, 'so_set': set(),
     })
