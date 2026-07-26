@@ -897,13 +897,13 @@
   ],
   "priority1": {
     "total": {
-      "so_ut1": 18649,
-      "pri": 11744,
-      "bom": 13714,
-      "sap": 2059,
-      "pct_pri": 63.0,
-      "pct_bom": 73.5,
-      "pct_sap": 11.0
+      "so_ut1": 18827,
+      "pri": 11918,
+      "bom": 13878,
+      "sap": 2189,
+      "pct_pri": 63.3,
+      "pct_bom": 73.7,
+      "pct_sap": 11.6
     },
     "rcm": [
       {

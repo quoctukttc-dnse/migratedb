@@ -118,13 +118,21 @@ def main():
             d['approved'] += 1
         d['so_set'].add(r[1])
 
-    # 'Reporting' sheet, block "1. Ưu Tiên 1 BY SO" (cols G..M, rows 4..~19).
+    # 'Reporting' sheet, block "1. Ưu Tiên 1 BY SO" (cols G..M, rows 4..18, 15 RCM rows).
     # This block is driven by live COUNTIFS formulas against '2. SCAF SO Detail'
     # (Priority == "1", is_PRI, is BOM, in SAP). We read the sheet's own cached
-    # formula results directly (data_only=True) rather than re-deriving them,
-    # since that's exactly what the business sees when they open the workbook.
+    # per-RCM formula results directly (data_only=True) rather than re-deriving
+    # them, since that's exactly what the business sees when they open the workbook.
+    #
+    # NOTE: the sheet's own "Total" row (row 19) uses =SUM(I3:I17) etc., which is
+    # off by one versus the actual data range (rows 4-18) — it includes the blank
+    # header row 3 (contributes 0) but excludes the LAST RCM row (18, currently
+    # TRẦN THỊ THANH THẢO), so the sheet's own Total undercounts by that RCM's
+    # values every time. We deliberately do NOT use that cached Total cell;
+    # we always recompute the total by summing the (verified-correct) per-RCM
+    # rows ourselves so this dashboard's total is accurate even though the
+    # source sheet's own Total cell is not.
     pri1_rows = []
-    pri1_total = None
     if 'Reporting' in wb.sheetnames:
         wsr = wb['Reporting']
         for r in wsr.iter_rows(min_row=4, max_row=40, min_col=7, max_col=13, values_only=True):
@@ -132,9 +140,6 @@ def main():
             if rcm_raw is None:
                 continue
             if str(rcm_raw).strip() == 'Total':
-                pri1_total = {
-                    'so_ut1': r[2] or 0, 'pri': r[3] or 0, 'bom': r[4] or 0, 'sap': r[5] or 0,
-                }
                 break
             so_ut1, pri, bom, sap = r[2] or 0, r[3] or 0, r[4] or 0, r[5] or 0
             pri1_rows.append({'rcm': canon(rcm_raw), 'so_ut1': so_ut1, 'pri': pri, 'bom': bom, 'sap': sap})
@@ -145,8 +150,9 @@ def main():
             for k in ('so_ut1', 'pri', 'bom', 'sap'):
                 m[k] += row[k]
         pri1_rows = list(merged.values())
-        if pri1_total is None:
-            pri1_total = {k: sum(row[k] for row in pri1_rows) for k in ('so_ut1', 'pri', 'bom', 'sap')}
+        pri1_total = {k: sum(row[k] for row in pri1_rows) for k in ('so_ut1', 'pri', 'bom', 'sap')} if pri1_rows else None
+    else:
+        pri1_total = None
 
     ws3 = wb['2. SCAF SO Detail']
     scaf_rows = list(ws3.iter_rows(min_row=2, values_only=True))
