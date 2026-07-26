@@ -98,7 +98,7 @@ def main():
     for r in mon_rows:
         key = norm_cust_key(r[6]) or 'CHƯA XÁC ĐỊNH'
         d = by_cust[key]
-        d['variants'][clean(r[6]) or 'Chưa xác định'] += 1
+        d['variants'][str(clean(r[6])) if clean(r[6]) is not None else 'Chưa xác định'] += 1
         d['total_lines'] += 1
         if clean(r[33]) == 'x':
             d['migrated_scaf'] += 1

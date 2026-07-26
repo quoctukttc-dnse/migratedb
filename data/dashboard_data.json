@@ -765,7 +765,7 @@
       "pct_sap": 0.0
     },
     {
-      "customer": 100194,
+      "customer": "100194",
       "monitor_lines": 11,
       "migrated_scaf": 11,
       "not_migrated_scaf": 0,
@@ -855,7 +855,7 @@
       "pct_sap": 0.0
     },
     {
-      "customer": 100055,
+      "customer": "100055",
       "monitor_lines": 2,
       "migrated_scaf": 2,
       "not_migrated_scaf": 0,
