@@ -71,6 +71,28 @@ def norm_so(v):
     return str(v).strip() or None
 
 
+def pct_of(part, base):
+    return round(100 * part / base, 1) if base else 0
+
+
+PRIORITY_BUCKETS = ['1', '2', '3', 'x', 'blank']
+
+
+def pbucket(v):
+    """Bucket a raw '2. SCAF SO Detail' Priority cell into '1'/'2'/'3'/'x'/'blank'."""
+    if v is None:
+        return 'blank'
+    if v == 1 or v == '1':
+        return '1'
+    if v == 2 or v == '2':
+        return '2'
+    if v == 3 or v == '3':
+        return '3'
+    if isinstance(v, str) and v.strip().lower() == 'x':
+        return 'x'
+    return 'blank'
+
+
 def main():
     import openpyxl
     xlsx_path, mtime_ms, repo_root = sys.argv[1], int(sys.argv[2]), sys.argv[3]
@@ -92,49 +114,74 @@ def main():
         if so_scax and r[19] == 1:
             scax_has_sap[so_scax] = True
 
+    # For each SCAX SO, the set of Priority buckets present among its SCAF
+    # Detail lines (a single SO can span multiple lines with different
+    # priorities). Used to filter '1. SO Monitor Migration' rows by priority
+    # for the RCM/Customer detail-table filter — joined the same way as
+    # scax_has_sap above (SO_No_ScaX, NOT SCAF Detail's own "SO_No").
+    so_priorities = collections.defaultdict(set)
+    for r in scaf_rows:
+        so_scax = norm_so(r[2])
+        if so_scax:
+            so_priorities[so_scax].add(pbucket(r[21]))
+
     ws = wb['1. SO Monitor Migration']
     mon_rows = list(ws.iter_rows(min_row=2, values_only=True))
-    by_rcm = collections.defaultdict(lambda: {
-        'total_lines': 0, 'migrated_scaf': 0, 'not_migrated_scaf': 0, 'uploaded_sap': 0,
-        'order_qty': 0.0, 'so_set': set(), 'customers': set(),
-    })
-    for r in mon_rows:
-        rcm = canon(r[5]); d = by_rcm[rcm]
-        d['total_lines'] += 1
-        if isinstance(r[18], (int, float)):
-            d['order_qty'] += r[18]
-        if clean(r[33]) == 'x':
-            d['migrated_scaf'] += 1
-        else:
-            d['not_migrated_scaf'] += 1
-        # "Upload to SAP" in Monitor is a manually-ticked 'x' column and is
-        # heavily stale/under-marked (verified: only 398/9676 rows marked,
-        # vs 3504/9676 once cross-checked against SCAF SO Detail's live
-        # in_SAP flag for the same SCAX SO — a >8x undercount). We treat a
-        # row as uploaded if EITHER the manual 'x' is present OR any SCAF
-        # Detail line for that same SO is flagged in_SAP == 1.
-        if clean(r[34]) == 'x' or scax_has_sap.get(norm_so(r[1]), False):
-            d['uploaded_sap'] += 1
-        d['so_set'].add(r[1])
-        if r[6]:
-            d['customers'].add(r[6])
 
-    by_cust = collections.defaultdict(lambda: {
-        'total_lines': 0, 'migrated_scaf': 0, 'not_migrated_scaf': 0, 'uploaded_sap': 0,
-        'so_set': set(), 'variants': collections.Counter(),
-    })
-    for r in mon_rows:
-        key = norm_cust_key(r[6]) or 'CHƯA XÁC ĐỊNH'
-        d = by_cust[key]
-        d['variants'][str(clean(r[6])) if clean(r[6]) is not None else 'Chưa xác định'] += 1
-        d['total_lines'] += 1
-        if clean(r[33]) == 'x':
-            d['migrated_scaf'] += 1
-        else:
-            d['not_migrated_scaf'] += 1
-        if clean(r[34]) == 'x' or scax_has_sap.get(norm_so(r[1]), False):
-            d['uploaded_sap'] += 1
-        d['so_set'].add(r[1])
+    def build_monitor_aggregates(priority_filter=None):
+        """Aggregate '1. SO Monitor Migration' rows by RCM and by Customer.
+        If priority_filter is set (one of PRIORITY_BUCKETS), only rows whose
+        SO has at least one SCAF Detail line in that priority bucket are
+        included (inclusive — a multi-line SO can match more than one
+        bucket)."""
+        by_rcm_ = collections.defaultdict(lambda: {
+            'total_lines': 0, 'migrated_scaf': 0, 'not_migrated_scaf': 0, 'uploaded_sap': 0,
+            'order_qty': 0.0, 'so_set': set(), 'customers': set(),
+        })
+        by_cust_ = collections.defaultdict(lambda: {
+            'total_lines': 0, 'migrated_scaf': 0, 'not_migrated_scaf': 0, 'uploaded_sap': 0,
+            'so_set': set(), 'variants': collections.Counter(),
+        })
+        for r in mon_rows:
+            if priority_filter is not None:
+                if priority_filter not in so_priorities.get(norm_so(r[1]), ()):
+                    continue
+            rcm = canon(r[5]); d = by_rcm_[rcm]
+            d['total_lines'] += 1
+            if isinstance(r[18], (int, float)):
+                d['order_qty'] += r[18]
+            is_scaf = clean(r[33]) == 'x'
+            # "Upload to SAP" in Monitor is a manually-ticked 'x' column and is
+            # heavily stale/under-marked (verified: only 398/9676 rows marked,
+            # vs 3504/9676 once cross-checked against SCAF SO Detail's live
+            # in_SAP flag for the same SCAX SO — a >8x undercount). We treat a
+            # row as uploaded if EITHER the manual 'x' is present OR any SCAF
+            # Detail line for that same SO is flagged in_SAP == 1.
+            is_sap = clean(r[34]) == 'x' or scax_has_sap.get(norm_so(r[1]), False)
+            if is_scaf:
+                d['migrated_scaf'] += 1
+            else:
+                d['not_migrated_scaf'] += 1
+            if is_sap:
+                d['uploaded_sap'] += 1
+            d['so_set'].add(r[1])
+            if r[6]:
+                d['customers'].add(r[6])
+
+            key = norm_cust_key(r[6]) or 'CHƯA XÁC ĐỊNH'
+            dc = by_cust_[key]
+            dc['variants'][str(clean(r[6])) if clean(r[6]) is not None else 'Chưa xác định'] += 1
+            dc['total_lines'] += 1
+            if is_scaf:
+                dc['migrated_scaf'] += 1
+            else:
+                dc['not_migrated_scaf'] += 1
+            if is_sap:
+                dc['uploaded_sap'] += 1
+            dc['so_set'].add(r[1])
+        return by_rcm_, by_cust_
+
+    by_rcm, by_cust = build_monitor_aggregates(None)
 
     ws2 = wb['3. SO Khong Migration']
     km_rows = list(ws2.iter_rows(min_row=2, values_only=True))
@@ -183,17 +230,27 @@ def main():
         pri1_total = None
 
     # (scaf_rows already loaded near the top of main(), used there to build scax_has_sap)
-    by_rcm_scaf = collections.defaultdict(lambda: {
-        'total': 0, 'is_pri': 0, 'is_bom': 0, 'in_sap': 0, 'complete': 0, 'so_set': set(),
-    })
-    for r in scaf_rows:
-        rcm = canon(r[5]); d = by_rcm_scaf[rcm]
-        d['total'] += 1
-        if r[17] == 1: d['is_pri'] += 1
-        if r[18] == 1: d['is_bom'] += 1
-        if r[19] == 1: d['in_sap'] += 1
-        if clean(r[23]) == 'COMPLETE': d['complete'] += 1
-        d['so_set'].add(r[1])
+    def build_scaf_rcm_aggregates(priority_filter=None):
+        """Aggregate '2. SCAF SO Detail' rows by RCM. If priority_filter is
+        set, only rows whose OWN Priority cell buckets to that value are
+        included — precise, since each SCAF Detail line has exactly one
+        Priority (unlike the SO-level join used for the Monitor sheet)."""
+        by_rcm_scaf_ = collections.defaultdict(lambda: {
+            'total': 0, 'is_pri': 0, 'is_bom': 0, 'in_sap': 0, 'complete': 0, 'so_set': set(),
+        })
+        for r in scaf_rows:
+            if priority_filter is not None and pbucket(r[21]) != priority_filter:
+                continue
+            rcm = canon(r[5]); d = by_rcm_scaf_[rcm]
+            d['total'] += 1
+            if r[17] == 1: d['is_pri'] += 1
+            if r[18] == 1: d['is_bom'] += 1
+            if r[19] == 1: d['in_sap'] += 1
+            if clean(r[23]) == 'COMPLETE': d['complete'] += 1
+            d['so_set'].add(r[1])
+        return by_rcm_scaf_
+
+    by_rcm_scaf = build_scaf_rcm_aggregates(None)
 
     all_rcms = sorted(set(by_rcm) | set(by_rcm_km) | set(by_rcm_scaf))
     result = {}
@@ -263,9 +320,6 @@ def main():
         })
     cust_rows.sort(key=lambda r: -r['monitor_lines'])
 
-    def pct_of(part, base):
-        return round(100 * part / base, 1) if base else 0
-
     priority1 = None
     if pri1_total is not None:
         pri1_out_rows = []
@@ -288,8 +342,76 @@ def main():
             'rcm': pri1_out_rows,
         }
 
+    # Priority filter (1/2/3/x/blank) for the RCM and Customer detail tables.
+    # Priority itself only exists as a reliable field on '2. SCAF SO Detail'
+    # ('1. SO Monitor Migration' has a same-named column, but it's populated
+    # with product-segment text like "PANTY"/"OUTERWEAR" for most rows, not
+    # a priority tier — not usable). For each bucket we recompute:
+    #  - Monitor-derived fields (monitor_lines, migrated_scaf, uploaded_sap,
+    #    so_count, ...) by including only Monitor rows whose SO has at least
+    #    one SCAF Detail line in that bucket (SO-level join, inclusive).
+    #  - SCAF-derived fields (scaf_total, pct_pri, pct_bom, ...) by directly
+    #    filtering SCAF Detail rows to that bucket's own Priority value
+    #    (precise, line-level — no join needed since RCM naming already
+    #    matches between the two sheets via canon()).
+    def build_rcm_rows(by_rcm_x, by_rcm_scaf_x):
+        all_rcms_x = sorted(set(by_rcm_x) | set(by_rcm_scaf_x))
+        out = []
+        for rcm in all_rcms_x:
+            m = by_rcm_x.get(rcm, {}); s = by_rcm_scaf_x.get(rcm, {})
+            ml = m.get('total_lines', 0)
+            migrated_scaf = m.get('migrated_scaf', 0)
+            uploaded_sap = m.get('uploaded_sap', 0)
+            st = s.get('total', 0)
+            scaf_is_pri = s.get('is_pri', 0)
+            scaf_is_bom = s.get('is_bom', 0)
+            out.append({
+                'rcm': rcm,
+                'monitor_lines': ml,
+                'migrated_scaf': migrated_scaf,
+                'not_migrated_scaf': m.get('not_migrated_scaf', 0),
+                'uploaded_sap': uploaded_sap,
+                'so_count': len(m.get('so_set', set())),
+                'scaf_total': st,
+                'scaf_is_pri': scaf_is_pri,
+                'scaf_is_bom': scaf_is_bom,
+                'pct_scaf': pct_of(migrated_scaf, ml),
+                'pct_sap': pct_of(uploaded_sap, ml),
+                'pct_pri': pct_of(scaf_is_pri, st),
+                'pct_bom': pct_of(scaf_is_bom, st),
+            })
+        out.sort(key=lambda r: -r['monitor_lines'])
+        return out
+
+    def build_cust_rows(by_cust_x):
+        out = []
+        for key, d in by_cust_x.items():
+            ml = d['total_lines']
+            label = d['variants'].most_common(1)[0][0] if key != 'CHƯA XÁC ĐỊNH' else 'Chưa xác định'
+            out.append({
+                'customer': label,
+                'monitor_lines': ml,
+                'migrated_scaf': d['migrated_scaf'],
+                'not_migrated_scaf': d['not_migrated_scaf'],
+                'uploaded_sap': d['uploaded_sap'],
+                'so_count': len(d['so_set']),
+                'pct_scaf': pct_of(d['migrated_scaf'], ml),
+                'pct_sap': pct_of(d['uploaded_sap'], ml),
+            })
+        out.sort(key=lambda r: -r['monitor_lines'])
+        return out
+
+    rcm_by_priority = {}
+    customer_by_priority = {}
+    for b in PRIORITY_BUCKETS:
+        by_rcm_b, by_cust_b = build_monitor_aggregates(b)
+        by_rcm_scaf_b = build_scaf_rcm_aggregates(b)
+        rcm_by_priority[b] = build_rcm_rows(by_rcm_b, by_rcm_scaf_b)
+        customer_by_priority[b] = build_cust_rows(by_cust_b)
+
     payload = {'report_date': report_date, 'totals': totals, 'pct': pct, 'rcm': rows, 'customer': cust_rows,
-               'priority1': priority1}
+               'priority1': priority1, 'priority_buckets': PRIORITY_BUCKETS,
+               'rcm_by_priority': rcm_by_priority, 'customer_by_priority': customer_by_priority}
 
     # Compare against what's currently committed (ignoring report_date) to decide if anything changed.
     data_path = f'{repo_root}/data/dashboard_data.json'
